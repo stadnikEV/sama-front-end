@@ -1,0 +1,56 @@
+.index {
+  margin: 0 20px;
+}
+
+.input-data {
+  margin-top: 20px;
+}
+
+.form-go-to {
+  display: inline-block;
+  margin-left: 50px;
+  margin-right: 50px;
+}
+
+.input-go-to {
+  width: 40px;
+}
+
+.button-go-to {
+  display: none;
+}
+
+.form-auto {
+  display: inline-block;
+}
+
+.input-auto-from, .input-auto-to {
+  width: 40px;
+}
+
+.auto-idicate {
+  visibility: hidden;
+}
+
+.auto-idicate.active {
+  visibility: visible;
+  color: blue;
+}
+
+.check-bitrix-data {
+  height: 30px;
+}
+
+.company, .email, .comments {
+  height: 70px;
+  width: 300px;
+}
+
+.email {
+  width: 200px;
+}
+
+.template {
+  margin-top: 10px;
+  width: 300px;
+}

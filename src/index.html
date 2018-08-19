@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script src="pubsub.js" defer></script>
+  <script src="index.js" defer></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <span class="index"></span>
+  <button class="add-company">Добавить компанию</button>
+  <button class="prev-company">Предыдущая компания</button>
+  <button class="next-company">Следующая компания</button>
+
+  <form action="#" class="form-go-to">
+    <span class="go-to-describe">Перейти в позицию</span>
+    <input type="text" class="input-go-to">
+    <button class="button-go-to">position</button>
+  </form>
+
+  <form action="#" class="form-auto">
+    <span>Автоматический режим</span>
+    <input type="text" class="input-auto-from">
+    <input type="text" class="input-auto-to">
+    <button class="button-start">start</button>
+    <button class="button-stop">stop</button>
+    <span class="auto-idicate">Идет автоматическая рассылка</span>
+  </form>
+
+  <div class="input-data">
+    <p class="check-bitrix-data"></p>
+    <textarea class="company"></textarea>
+    <textarea class="email" disabled></textarea>
+    <textarea class="comments"></textarea>
+  </div>
+  <input type="text" class="template">
+  <span>Шаблон</span>
+</body>
+</html>
