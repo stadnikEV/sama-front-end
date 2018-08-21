@@ -26,17 +26,38 @@ class AddCompany {
 
 
     this.checkBitrixData = document.querySelector('.check-bitrix-data');
+    this.sendedElem = document.querySelector('.sended');
+
     this.inputTitle = document.querySelector('.company');
     this.inputEmail = document.querySelector('.email');
     this.inputComments = document.querySelector('.comments');
 
+    this.matchCompanyContainer = document.querySelector('.match-company-container');
+    this.matchCompany = document.querySelector('.match-company');
+    this.buttonRemoveMatch = document.querySelector('.button-remove-match');
+
+    this.buttonRemoveMatch.addEventListener('click', this.removeMatchElem.bind(this));
+
+    this.webhookInput = document.querySelector('.webhook-input');
+    this.daleyElem = document.querySelector('.daley');
+    this.daleyContainerElem = document.querySelector('.daley-container');
+
+    this.daleyFromElem = document.querySelector('.input-daley-from');
+    this.daleyFromTo = document.querySelector('.input-daley-to');
+
+    this.showMatchesContainer = document.querySelector('.show-matches-container');
+    this.fullMatch = document.querySelector('.full-match');
+
+
     this.index = 0;
     this.email = null;
+    this.sended = 0;
     this.isAdded = false;
     this.statusData = {
       email: false,
       company: false,
     };
+    this.match = {};
 
     this.getDataBase()
       .then((data) => {
@@ -46,17 +67,15 @@ class AddCompany {
         console.warn(e);
       });
 
+    this.matchCompany.addEventListener('click', this.onChoosMatch.bind(this));
+
     pubSub.subscribe('notValidMail', this.nextCompany.bind(this));
     pubSub.subscribe('notValidData', this.nextCompany.bind(this));
     pubSub.subscribe('dataOk', () => {
       this.addCompany();
     });
     pubSub.subscribe('isAdded', this.nextCompany.bind(this));
-    pubSub.subscribe('notValidCompany', () => {
-      this.stopAuto = false;
-      this.auto = false;
-      this.autoIndicate.classList.remove('active');
-    });
+    pubSub.subscribe('notValidCompany', this.nextCompany.bind(this));
   }
 
   getDataBase() {
@@ -80,9 +99,16 @@ class AddCompany {
   }
 
   autoStart() {
+    if (this.webhookInput.value === '') {
+      this.checkBitrixData.textContent = 'Подключите webHook';
+      return;
+    }
     console.log(this.auto);
     if (this.auto) {
       return;
+    }
+    if (this.matchElem) {
+      this.matchDeselect();
     }
     this.autoIndicate.classList.add('active');
     this.auto = true;
@@ -104,9 +130,35 @@ class AddCompany {
       this.autoIndicate.classList.remove('active');
       return;
     }
+    let dalayFrom = this.daleyFromElem.value;
+    let dalayTo = this.daleyFromTo.value;
+    if (dalayFrom === '' || dalayTo === '') {
+      dalayFrom = 500;
+      dalayTo = 1000;
+    } else {
+      dalayFrom = parseInt(dalayFrom, 10) * 1000;
+      dalayTo = parseInt(dalayTo, 10) * 1000;
+    }
+
+    const delay = dalayFrom + ((dalayTo - dalayFrom) * Math.random());
+    this.showDaley(delay);
     this.timer = setTimeout(() => {
       this.goToCompany({ mode: 'goTo', pos: currentPos });
-    }, 3000 + (6000 * Math.random()));
+    }, delay);
+  }
+
+  showDaley(delay) {
+    let delaySeconds = delay / 1000;
+    this.daleyElem.textContent = delaySeconds.toFixed(1);
+    this.daleyContainerElem.classList.remove('hide');
+    const timerId = setInterval(() => {
+      delaySeconds -= 0.1;
+      if (delaySeconds < 0) {
+        clearInterval(timerId);
+        this.daleyContainerElem.classList.add('hide');
+      }
+      this.daleyElem.textContent = delaySeconds.toFixed(1);
+    }, 100);
   }
 
   autoStop() {
@@ -131,6 +183,9 @@ class AddCompany {
       this.checkBitrixData.textContent = 'Ошибка: задайте позицию';
       return;
     }
+    if (this.matchElem) {
+      this.matchDeselect();
+    }
     index = parseInt(this.inputGoToCompany.value, 10) - 1;
 
     if (index < 1) {
@@ -146,18 +201,21 @@ class AddCompany {
     if (!this.dataBase || this.isPanding) {
       return;
     }
-    if (this.template.value === '') {
-      this.checkBitrixData.textContent = 'Шаблон пуст';
-      return;
-    }
+    this.fullMatch.innerHTML = '';
     this.checkBitrixData.textContent = ' Идет проверка данных';
     let data = null;
 
     if (mode === 'next') {
+      if (this.matchElem) {
+        this.matchDeselect();
+      }
       this.index += 1;
       data = this.dataBase[this.index];
     }
     if (mode === 'prev') {
+      if (this.matchElem) {
+        this.matchDeselect();
+      }
       this.index -= 1;
       if (this.index < 0) {
         this.index = 0;
@@ -237,7 +295,26 @@ class AddCompany {
             resolve();
             return;
           }
+          const match = dataFromBitrix.result;
+          for (let i = 0; i < dataFromBitrix.result.length; i += 1) {
+            const emailObj = dataFromBitrix.result[i].EMAIL;
+            let emailString = '';
+            console.log(emailObj[0].VALUE);
+            for (let j = 0; j < emailObj.length; j += 1) {
+              emailString += emailObj[j].VALUE + '</br>';
+            }
+            const html = `
+              <div class="match-raw">
+                <div class="full-match-title">${dataFromBitrix.result[i].TITLE}</div>
+                <div class="full-match-email">${emailString}</div>
+                <div class="full-match-comment">${dataFromBitrix.result[i].COMMENTS}</div>
+              </div>
+            `;
+            this.fullMatch.insertAdjacentHTML('beforeEnd', html);
+
+          }
           console.log(dataFromBitrix.result);
+          this.addMatchCompany();
           reject('такая компания существует');
         });
       })
@@ -284,8 +361,13 @@ class AddCompany {
     };
 
     return new Promise((resolve, reject) => {
+      if (this.webhookInput.value === '') {
+        this.checkBitrixData.textContent = 'Подключите webHook';
+        reject('Подключите webHook');
+        return;
+      }
       this.request({
-        url: 'https://lampada.bitrix24.ru/rest/18/cnorljpid3c8f9u2/crm.company.list',
+        url: `${this.webhookInput.value}/crm.company.list`,
         method: 'post',
         data,
       })
@@ -312,11 +394,16 @@ class AddCompany {
     return new Promise((resolve, reject) => {
       const loopIndex = email.length - 1;
       let i = 0;
+      if (this.webhookInput.value === '') {
+        this.checkBitrixData.textContent = 'Подключите webHook';
+        reject('Подключите webHook');
+        return;
+      }
 
       const asyncLoop = function async({ timing }) { // асинхронный цикл
         setTimeout(() => {
           this.request({
-            url: 'https://lampada.bitrix24.ru/rest/18/cnorljpid3c8f9u2/crm.company.list',
+            url: `${this.webhookInput.value}/crm.company.list`,
             method: 'post',
             data,
           })
@@ -352,9 +439,16 @@ class AddCompany {
       return;
     }
 
-    if (!this.statusData.email || !this.statusData.company) {
+    if (!this.statusData.email || !this.statusData.company || this.template.value === '') {
+      if (this.auto) {
+        this.stopAuto = false;
+        this.auto = false;
+      }
       this.autoIndicate.classList.remove('active');
       let message = null;
+      if (this.template.value === '') {
+        message = 'шаблон пуст';
+      }
       if (!this.statusData.company) {
         message = 'недопустимая компания';
       }
@@ -362,10 +456,14 @@ class AddCompany {
         message = 'недопустимый email';
       }
       this.checkBitrixData.textContent = `Ошибка:  данные не отправлены (${message})`;
+
       const conf = confirm(`${message}. Отправить?`);
 
       if (!conf) {
         return;
+      }
+      if (this.matchElem) {
+        this.removeMatchElem();
       }
     }
 
@@ -381,15 +479,19 @@ class AddCompany {
       data.fields.EMAIL.push({ VALUE: this.email[i], VALUE_TYPE: 'WORK' });
     }
 
-    this.checkBitrixData.textContent = `Добавление данных в битрикс24`;
-
+    this.checkBitrixData.textContent = 'Добавление данных в битрикс24';
+    if (this.webhookInput.value === '') {
+      this.checkBitrixData.textContent = 'Подключите webHook';
+      return;
+    }
     this.request({
-      url: 'https://lampada.bitrix24.ru/rest/18/cnorljpid3c8f9u2/crm.company.add',
+      url: `${this.webhookInput.value}/crm.company.add`,
       method: 'post',
       data,
     })
       .then(() => {
-        console.log(this.stopAuto);
+        this.sended += 1;
+        this.sendedElem.textContent = this.sended;
         this.checkBitrixData.textContent = `Данные успешно добавлены битрикс24`;
         if (this.auto) {
           setTimeout(() => {
@@ -431,6 +533,59 @@ class AddCompany {
           reject(e);
         });
     });
+  }
+
+
+  addMatchCompany() {
+    const index = this.index + 1;
+    if (this.match[index]) {
+      return;
+    }
+    this.matchCompanyContainer.classList.remove('hide');
+    const html = `<span>${index}</span>`;
+    this.matchCompany.insertAdjacentHTML('beforeEnd', html);
+
+    this.match[index] = true;
+  }
+
+  onChoosMatch(e) {
+    const elem = e.target.closest('span');
+    if (!elem) {
+      return;
+    }
+    if (this.matchElem === elem) {
+      return;
+    }
+    if (this.matchElem) {
+      this.matchElem.classList.remove('active');
+    }
+    elem.classList.add('active');
+    const pos = parseInt(elem.textContent - 1, 10);
+    this.matchElem = elem;
+    this.goToCompany({ mode: 'goTo', pos });
+    this.buttonRemoveMatch.classList.remove('hide');
+  }
+
+  matchDeselect() {
+    this.matchElem.classList.remove('active');
+    this.matchElem = null;
+  }
+
+
+  removeMatchElem() {
+    if (!this.matchElem || this.isPanding) {
+      return;
+    }
+    const index = this.matchElem.textContent;
+    delete this.match[index];
+    this.matchElem.remove();
+    this.matchElem = null;
+    console.log(this.match);
+
+    if (this.matchCompany.children.length === 0) {
+      this.matchCompanyContainer.classList.add('hide');
+    }
+    this.buttonRemoveMatch.classList.add('hide');
   }
 }
 

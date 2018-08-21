@@ -10,6 +10,10 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="webhook-container">
+    <input type="text" name="" value="" class="webhook-input">
+    <span class="webhook-describe">webHook </span>
+  </div>
   <span class="index"></span>
   <button class="add-company">Добавить компанию</button>
   <button class="prev-company">Предыдущая компания</button>
@@ -21,22 +25,38 @@
     <button class="button-go-to">position</button>
   </form>
 
-  <form action="#" class="form-auto">
-    <span>Автоматический режим</span>
-    <input type="text" class="input-auto-from">
-    <input type="text" class="input-auto-to">
-    <button class="button-start">start</button>
-    <button class="button-stop">stop</button>
-    <span class="auto-idicate">Идет автоматическая рассылка</span>
-  </form>
+  <div class="form-auto-container">
+    <form action="#" class="form-auto">
+      <span>Автоматический режим</span>
+      <input type="text" class="input-auto-from">
+      <input type="text" class="input-auto-to">
+      <button class="button-start">start</button>
+      <button class="button-stop">stop</button>
+      <span class="daley-text">Интервал(сек)</span>
+      <input type="text" class="input-daley-from">
+      <input type="text" class="input-daley-to">
+      <span class="auto-idicate">Идет автоматическое добавление</span>
+    </form>
+  </div>
+
 
   <div class="input-data">
     <p class="check-bitrix-data"></p>
+    <p class="daley-container hide"><span class="daley-describe">Задержка: </span><span class="daley">15c</span></p>
+    <p><span>Добавлено в базу: </span><span class="sended">0</span></p>
     <textarea class="company"></textarea>
     <textarea class="email" disabled></textarea>
     <textarea class="comments"></textarea>
   </div>
   <input type="text" class="template">
   <span>Шаблон</span>
+  <div class="match-company-container hide">
+    <p>Совпадения компаний</p>
+    <div class="match-company"></div>
+    <div><button class="button-remove-match hide">Удалить</button></div>
+  </div>
+  <div class="show-matches-container">
+    <div class="full-match"></div>
+  </div>
 </body>
 </html>

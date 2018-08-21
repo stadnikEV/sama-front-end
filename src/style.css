@@ -1,3 +1,26 @@
+.webhook-container {
+  margin-top: 10px;
+  margin-bottom: 30px;
+}
+
+.webhook-container::after {
+  content: '';
+  display: inline-block;
+  clear: right;
+}
+
+.webhook-describe, .webhook-input {
+  float: right;
+}
+
+.webhook-input {
+  width: 350px;
+}
+
+.webhook-describe {
+  margin-right: 10px;
+}
+
 .index {
   margin: 0 20px;
 }
@@ -54,3 +77,79 @@
   margin-top: 10px;
   width: 300px;
 }
+
+
+.match-company-container.hide {
+  display: none;
+}
+
+.match-company {
+  /* border: solid 1px blue; */
+}
+
+.match-company span {
+  padding: 5px 10px;
+  margin-right: 10px;
+  background-color: LightSkyBlue ;
+}
+
+.match-company span:hover {
+  cursor: pointer;
+}
+
+.match-company span.active {
+  background-color: blue;
+  color: white;
+}
+
+.button-remove-match {
+  margin-top: 20px;
+}
+.button-remove-match.hide {
+  display: none;
+}
+
+.daley, .daley-describe {
+  color: LightSkyBlue;
+}
+
+.daley-container.hide {
+  visibility: hidden;
+}
+
+.form-auto-container {
+  margin-top: 30px;
+  margin-left: 40px;
+}
+
+.daley-text {
+  margin-left: 15px;
+}
+
+.input-daley-from, .input-daley-to {
+  width: 25px;
+}
+
+.show-matches-container {
+  margin-top: 20px;
+}
+
+
+
+.full-match-title, .full-match-email, .full-match-comment {
+  display: inline-block;
+  width: 400px;
+  vertical-align: top;
+}
+
+.match-raw {
+  margin-bottom: 4px;
+  background-color: rgb(255, 251, 229);
+  padding: 12px 0;
+}
+
+/* .full-match {
+  margin: 3px 0;
+  border-bottom: solid 1px white;
+  background-color: rgb(255, 251, 229);
+} */
