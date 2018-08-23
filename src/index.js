@@ -5,6 +5,7 @@ class AddCompany {
     const addCompanyButton = document.querySelector('.add-company');
     addCompanyButton.addEventListener('click', this.addCompany.bind(this));
 
+    this.dbReadyElem = document.querySelector('.db-ready');
     this.indexElem = document.querySelector('.index');
     const nextCompanyButton = document.querySelector('.next-company');
     nextCompanyButton.addEventListener('click', this.goToCompany.bind(this, { mode: 'next' }));
@@ -48,6 +49,10 @@ class AddCompany {
     this.showMatchesContainer = document.querySelector('.show-matches-container');
     this.fullMatch = document.querySelector('.full-match');
 
+    this.buttonRefresh = document.querySelector('.button-refresh');
+    this.refreshTextElem = document.querySelector('.refresh-text');
+    this.buttonRefresh.addEventListener('click', this.updateData.bind(this));
+
 
     this.index = 0;
     this.email = null;
@@ -59,13 +64,6 @@ class AddCompany {
     };
     this.match = {};
 
-    this.getDataBase()
-      .then((data) => {
-        this.dataBase = data;
-      })
-      .catch((e) => {
-        console.warn(e);
-      });
 
     this.matchCompany.addEventListener('click', this.onChoosMatch.bind(this));
 
@@ -76,6 +74,26 @@ class AddCompany {
     });
     pubSub.subscribe('isAdded', this.nextCompany.bind(this));
     pubSub.subscribe('notValidCompany', this.nextCompany.bind(this));
+
+
+    this.getDataBase()
+      .then((data) => {
+        this.dataBase = data;
+        return;
+      })
+      .then(() => {
+        return this.getBitrixDB();
+      })
+      .then((data) => {
+        this.BitrixDataBase = JSON.parse(data);
+        this.dbReadyElem.textContent = 'БАЗА ДАННЫХ ЗАГРУЖЕНА';
+        this.dbReadyElem.classList.add('loaded');
+        this.dbReady = true;
+        this.goToCompany({ mode: 'goTo', pos: 0 });
+      })
+      .catch((e) => {
+        console.warn(e);
+      });
   }
 
   getDataBase() {
@@ -93,17 +111,35 @@ class AddCompany {
     });
   }
 
+  getBitrixDB() {
+    return new Promise((resolve, reject) => {
+      this.request({
+        url: 'http://localhost:8080/getBitrixDB',
+        method: 'post',
+      })
+        .then((json) => {
+          resolve(json);
+        })
+        .catch((e) => {
+          reject(e);
+        });
+    });
+  }
+
   parseEmail({ email }) {
     const emailArr = email.match(/(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/g);
     return emailArr;
   }
 
-  autoStart() {
+  autoStart(e) {
+    e.preventDefault();
+    if (!this.dataBase || !this.dbReady || this.isPanding) {
+      return;
+    }
     if (this.webhookInput.value === '') {
       this.checkBitrixData.textContent = 'Подключите webHook';
       return;
     }
-    console.log(this.auto);
     if (this.auto) {
       return;
     }
@@ -143,6 +179,7 @@ class AddCompany {
     const delay = dalayFrom + ((dalayTo - dalayFrom) * Math.random());
     this.showDaley(delay);
     this.timer = setTimeout(() => {
+      this.timer = null;
       this.goToCompany({ mode: 'goTo', pos: currentPos });
     }, delay);
   }
@@ -151,10 +188,11 @@ class AddCompany {
     let delaySeconds = delay / 1000;
     this.daleyElem.textContent = delaySeconds.toFixed(1);
     this.daleyContainerElem.classList.remove('hide');
-    const timerId = setInterval(() => {
+    this.interval = setInterval(() => {
       delaySeconds -= 0.1;
-      if (delaySeconds < 0) {
-        clearInterval(timerId);
+      if (delaySeconds < 0.1) {
+        clearInterval(this.interval);
+        this.interval = null;
         this.daleyContainerElem.classList.add('hide');
       }
       this.daleyElem.textContent = delaySeconds.toFixed(1);
@@ -168,15 +206,21 @@ class AddCompany {
     this.stopAuto = true;
     if (this.timer) {
       clearTimeout(this.timer);
+      clearInterval(this.interval);
+      this.daleyContainerElem.classList.add('hide');
+      this.autoIndicate.classList.remove('active');
       this.timer = null;
-      if (!this.isPanding) {
-        this.autoIndicate.classList.remove('active');
-      }
+      this.interval = null;
+      this.stopAuto = false;
       this.auto = false;
     }
   }
 
-  goToPos() {
+  goToPos(e) {
+    if (!this.dataBase || !this.dbReady || this.isPanding) {
+      return;
+    }
+    e.preventDefault();
     let index = this.inputGoToCompany.value;
 
     if (index === '') {
@@ -198,7 +242,7 @@ class AddCompany {
   }
 
   goToCompany({ mode, pos }) {
-    if (!this.dataBase || this.isPanding) {
+    if (!this.dataBase || !this.dbReady || this.isPanding) {
       return;
     }
     this.fullMatch.innerHTML = '';
@@ -231,7 +275,7 @@ class AddCompany {
       email: false,
       company: false,
     };
-
+    this.showMatchesContainer.classList.add('hidden');
     this.isAdded = false;
     this.indexElem.textContent = this.index + 1;
     this.title = data.Компания;
@@ -239,26 +283,6 @@ class AddCompany {
     this.name = data.ФИО;
     this.city = data.Город;
     this.industry = data.Отрасль;
-
-    if (data.Почта === '' || data.ФИО === '') {
-      this.checkBitrixData.textContent = 'Не корректные данные в Эксель';
-      console.warn('Не корректные данные в Эксель');
-      this.isPanding = false;
-      this.email = [data.Почта];
-      this.addToForm({
-        title: this.title,
-        email: this.email,
-        comments: this.name,
-        city: this.city,
-        industry: this.industry,
-      });
-      if (this.auto) {
-        setTimeout(() => {
-          pubSub.publish('notValidData');
-        }, 1000);
-      }
-      return;
-    }
 
     this.addToForm({
       title: this.title,
@@ -269,17 +293,18 @@ class AddCompany {
     });
 
 
-    this.getCompanyByEmail({ email: this.email })
+    this.checkData()
+      .then(() => {
+        return this.getCompanyByEmail({ email: this.email });
+      })
       .then((dataFromBitrix) => {
         return new Promise((resolve, reject) => {
           if (dataFromBitrix.result.length === 0) {
-            console.log('emai ok');
             this.statusData.email = true;
             this.checkBitrixData.textContent = 'emai ok';
             resolve();
             return;
           }
-          console.log(dataFromBitrix.result);
           reject('такой emai существует');
         });
       })
@@ -288,55 +313,71 @@ class AddCompany {
       })
       .then((dataFromBitrix) => {
         return new Promise((resolve, reject) => {
-          if (dataFromBitrix.result.length === 0) {
-            console.log('компания ok');
+          const fullMatch = dataFromBitrix.result;
+          this.fullMatchNameFilter = this.getFullMatchNameFilter(fullMatch);
+
+          let ExcelMatch = this.searchMathesExcel();
+
+
+          if (this.fullMatchNameFilter.length === 0 && ExcelMatch.length === 0) {
             this.statusData.company = true;
             this.checkBitrixData.textContent = 'компания ok';
             resolve();
             return;
           }
-          const match = dataFromBitrix.result;
-          for (let i = 0; i < dataFromBitrix.result.length; i += 1) {
-            const emailObj = dataFromBitrix.result[i].EMAIL;
-            let emailString = '';
-            console.log(emailObj[0].VALUE);
-            for (let j = 0; j < emailObj.length; j += 1) {
-              emailString += emailObj[j].VALUE + '</br>';
-            }
-            const html = `
-              <div class="match-raw">
-                <div class="full-match-title">${dataFromBitrix.result[i].TITLE}</div>
-                <div class="full-match-email">${emailString}</div>
-                <div class="full-match-comment">${dataFromBitrix.result[i].COMMENTS}</div>
-              </div>
-            `;
-            this.fullMatch.insertAdjacentHTML('beforeEnd', html);
-
-          }
-          console.log(dataFromBitrix.result);
           this.addMatchCompany();
+          if (this.fullMatchNameFilter.length !== 0) {
+            this.showMathesBitrix(fullMatch);
+          }
+          if (ExcelMatch.length !== 0) {
+            this.showMathesExcel(ExcelMatch);
+          }
           reject('такая компания существует');
         });
       })
       .then(() => {
         this.isPanding = false;
         if (this.auto) {
+          if (this.stopAuto) {
+            this.autoIndicate.classList.remove('active');
+            this.stopAuto = false;
+            this.auto = false;
+            return;
+          }
           pubSub.publish('dataOk');
+          return;
         }
+        setTimeout(() => {
+          this.checkBitrixData.textContent = 'данные ok';
+        }, 1000);
       })
       .catch((e) => {
         this.isPanding = false;
         console.warn(e);
         if (typeof e === 'string') {
           this.checkBitrixData.textContent = `Ошибка:  ${e}`;
-          if (e === 'такой emai существует' && this.auto) {
+          if (!this.auto) {
+            return;
+          }
+          if (this.stopAuto) {
+            this.autoIndicate.classList.remove('active');
+            this.stopAuto = false;
+            this.auto = false;
+            return;
+          }
+          if (e === 'такой emai существует') {
             setTimeout(() => {
               pubSub.publish('notValidMail');
             }, 1000);
           }
-          if (e === 'такая компания существует' && this.auto) {
+          if (e === 'такая компания существует') {
             setTimeout(() => {
               pubSub.publish('notValidCompany');
+            }, 1000);
+          }
+          if (e === 'Не корректные данные в Эксель') {
+            setTimeout(() => {
+              pubSub.publish('notValidData');
             }, 1000);
           }
         }
@@ -344,13 +385,37 @@ class AddCompany {
   }
 
   addToForm({ title, email, comments, city, industry }) {
-    this.inputTitle.value = title;
-    this.inputComments.value = `${comments}<br><br>\n\n${this.template.value} ${city}<br>\n${industry}`;
-
-    this.inputEmail.textContent = email[0];
-    for (let i = 1; i < email.length; i += 1) {
-      this.inputEmail.textContent += `\n${email[i]}`;
+    if (title !== '') {
+      this.inputTitle.value = title;
+    } else {
+      this.inputTitle.value = '';
     }
+    if (comments !== '') {
+      this.inputComments.value = `${comments}<br><br>\n\n${this.template.value} ${city}<br>\n${industry}`;
+    } else {
+      this.inputComments.value = '';
+    }
+    if (email !== null) {
+      this.inputEmail.textContent = email[0];
+      for (let i = 1; i < email.length; i += 1) {
+        this.inputEmail.textContent += `\n${email[i]}`;
+      }
+    } else {
+      this.inputEmail.textContent = '';
+    }
+  }
+
+  checkData() {
+    return new Promise((resolve, reject) => {
+      if (this.email !== null && this.name !== '') {
+        resolve();
+        return;
+      }
+      this.checkBitrixData.textContent = 'Не корректные данные в Эксель';
+      this.isPanding = false;
+      // this.email = [data.Почта];
+      reject('Не корректные данные в Эксель');
+    });
   }
 
   getCompanyByTitle({ TITLE }) {
@@ -493,6 +558,9 @@ class AddCompany {
         this.sended += 1;
         this.sendedElem.textContent = this.sended;
         this.checkBitrixData.textContent = `Данные успешно добавлены битрикс24`;
+        this.statusData.email = false;
+        this.statusData.company = false;
+
         if (this.auto) {
           setTimeout(() => {
             this.isAdded = true;
@@ -567,6 +635,7 @@ class AddCompany {
   }
 
   matchDeselect() {
+    this.buttonRemoveMatch.classList.add('hide');
     this.matchElem.classList.remove('active');
     this.matchElem = null;
   }
@@ -580,12 +649,134 @@ class AddCompany {
     delete this.match[index];
     this.matchElem.remove();
     this.matchElem = null;
-    console.log(this.match);
 
     if (this.matchCompany.children.length === 0) {
       this.matchCompanyContainer.classList.add('hide');
     }
     this.buttonRemoveMatch.classList.add('hide');
+  }
+
+
+  updateData() {
+    this.refreshTextElem.textContent = 'обновление...';
+    this.refreshTextElem.classList.remove('hidden');
+    this.refreshTextElem.classList.remove('error');
+    this.getDataBase()
+      .then((data) => {
+        this.dataBase = data;
+        this.refreshTextElem.textContent = 'данные обновлены';
+        setTimeout(() => {
+          this.refreshTextElem.classList.add('hidden');
+        }, 2000);
+      })
+      .catch((e) => {
+        console.warn(e);
+        this.refreshTextElem.classList.add('error');
+        this.refreshTextElem.textContent = 'не удалось обновить данные';
+      });
+  }
+
+  searchMathesExcel() {
+    const mainResault = [];
+    const resultCompany = [];
+    const title = this.title.toLowerCase();
+    const regExpSearhCompany = new RegExp(`(^${title}[^а-яА-ЯёЁa-zA-z-]|[^а-яА-ЯёЁa-zA-z-]${title}[^а-яА-ЯёЁa-zA-z-]|[^а-яА-ЯёЁa-zA-z-]${title}$|^${title}$)`);
+    this.BitrixDataBase.forEach((item) => {
+      const company = item.company.toLowerCase();
+      const res = company.search(regExpSearhCompany);
+      if (res !== -1) {
+        resultCompany.push(item);
+      }
+    });
+    let marchNameCount = 0;
+    const name = this.name.toLowerCase();
+    const nameArr = name.split(' ')
+
+    resultCompany.forEach((itemCompany) => {
+      nameArr.forEach((itemName) => {
+        const regExpSearhName = new RegExp(`${itemName}`);
+        const comments = itemCompany.comments.toLowerCase();
+        const res = comments.search(regExpSearhName);
+        if (res !== -1) {
+          marchNameCount += 1;
+        }
+      });
+      if (marchNameCount > 1) {
+        mainResault.push(itemCompany);
+      }
+      marchNameCount = 0;
+    });
+    return mainResault;
+  }
+
+  showMathesBitrix(data) {
+    this.showMatchesContainer.classList.remove('hidden');
+    const match = data;
+    for (let i = 0; i < data.length; i += 1) {
+      const emailObj = data[i].EMAIL;
+      let emailString = '';
+      for (let j = 0; j < emailObj.length; j += 1) {
+        emailString += emailObj[j].VALUE + '</br>';
+      }
+      const html = `
+        <div class="match-raw">
+          <div class="full-match-title">${data[i].TITLE}</div>
+          <div class="full-match-email">${emailString}</div>
+          <div class="full-match-comment">${data[i].COMMENTS}</div>
+        </div>
+      `;
+      this.fullMatch.insertAdjacentHTML('beforeEnd', html);
+    }
+  }
+
+
+  showMathesExcel(data) {
+    this.showMatchesContainer.classList.remove('hidden');
+    const match = data;
+    for (let i = 0; i < data.length; i += 1) {    this.fullMatchNameFilter
+      let isIdMatch = false;
+      for(let j = 0; j < this.fullMatchNameFilter.length; j += 1) {
+        if (this.fullMatchNameFilter[j].ID === data[i].id) {
+          isIdMatch = true;
+          break;
+        }
+      }
+      if (isIdMatch) {
+        break;
+      }
+      const html = `
+        <div class="match-raw">
+          <div class="full-match-title">${data[i].company}</div>
+          <div class="full-match-email">${data[i].email}</div>
+          <div class="full-match-comment">${data[i].comments}</div>
+        </div>
+      `;
+      this.fullMatch.insertAdjacentHTML('beforeEnd', html);
+    }
+  }
+
+  getFullMatchNameFilter(data) {
+    const result = [];
+    let marchNameCount = 0;
+    const name = this.name.toLowerCase();
+    const nameArr = name.split(' ');
+
+    data.forEach((item) => {
+      nameArr.forEach((itemName) => {
+        const regExpSearhName = new RegExp(`${itemName}`);
+        const comments = item.COMMENTS.toLowerCase();
+        const res = comments.search(regExpSearhName);
+        if (res !== -1) {
+          marchNameCount += 1;
+        }
+      });
+      if (marchNameCount > 1) {
+        result.push(item);
+      }
+      marchNameCount = 0;
+    });
+
+    return result;
   }
 }
 

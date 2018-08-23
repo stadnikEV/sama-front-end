@@ -11,6 +11,7 @@
 </head>
 <body>
   <div class="webhook-container">
+    <span class="db-ready">ЗАГРУЗКА БАЗЫ ДАННЫХ...</span>
     <input type="text" name="" value="" class="webhook-input">
     <span class="webhook-describe">webHook </span>
   </div>
@@ -24,6 +25,9 @@
     <input type="text" class="input-go-to">
     <button class="button-go-to">position</button>
   </form>
+
+  <button class="button-refresh">Обновить данные Excel</button>
+  <span class="refresh-text hidden">Данные обновлены</span>
 
   <div class="form-auto-container">
     <form action="#" class="form-auto">
@@ -55,7 +59,7 @@
     <div class="match-company"></div>
     <div><button class="button-remove-match hide">Удалить</button></div>
   </div>
-  <div class="show-matches-container">
+  <div class="show-matches-container hidden">
     <div class="full-match"></div>
   </div>
 </body>
