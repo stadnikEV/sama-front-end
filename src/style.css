@@ -83,7 +83,8 @@
   width: 200px;
 }
 
-.template {
+.template,
+.template-footer {
   margin-top: 10px;
   width: 300px;
 }

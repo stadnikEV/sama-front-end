@@ -15,6 +15,7 @@ class AddCompany {
     goToCompanyButton.addEventListener('click', this.goToPos.bind(this));
     this.inputGoToCompany = document.querySelector('.input-go-to');
     this.template = document.querySelector('.template');
+    this.templateFooter = document.querySelector('.template-footer');
     this.inputAutoFrom = document.querySelector('.input-auto-from');
     this.inputAutoTo = document.querySelector('.input-auto-to');
     this.autoIndicate = document.querySelector('.auto-idicate');
@@ -55,6 +56,7 @@ class AddCompany {
 
 
     this.index = 0;
+    this.numberAutoAdded = 0;
     this.email = null;
     this.sended = 0;
     this.isAdded = false;
@@ -149,7 +151,7 @@ class AddCompany {
     this.autoIndicate.classList.add('active');
     this.auto = true;
     this.startPos = parseInt(this.inputAutoFrom.value, 10) - 1;
-    this.endPos = parseInt(this.inputAutoTo.value, 10) - 1;
+    this.neadEdd = parseInt(this.inputAutoTo.value, 10);
     this.goToCompany({ mode: 'goTo', pos: this.startPos });
   }
 
@@ -161,11 +163,14 @@ class AddCompany {
       return;
     }
     const currentPos = this.index + 1;
-    if (currentPos > this.endPos) {
+    console.log(this.numberAutoAdded, this.neadEdd );
+    if (this.numberAutoAdded === this.neadEdd || currentPos > this.dataBase.length - 1) {
+      this.numberAutoAdded = 0;
       this.auto = false;
       this.autoIndicate.classList.remove('active');
       return;
     }
+
     let dalayFrom = this.daleyFromElem.value;
     let dalayTo = this.daleyFromTo.value;
     if (dalayFrom === '' || dalayTo === '') {
@@ -178,7 +183,9 @@ class AddCompany {
 
     const delay = dalayFrom + ((dalayTo - dalayFrom) * Math.random());
     this.showDaley(delay);
+    this.daleyContainerElem.classList.remove('hide');
     this.timer = setTimeout(() => {
+      this.daleyContainerElem.classList.add('hide');
       this.timer = null;
       this.goToCompany({ mode: 'goTo', pos: currentPos });
     }, delay);
@@ -187,13 +194,11 @@ class AddCompany {
   showDaley(delay) {
     let delaySeconds = delay / 1000;
     this.daleyElem.textContent = delaySeconds.toFixed(1);
-    this.daleyContainerElem.classList.remove('hide');
     this.interval = setInterval(() => {
       delaySeconds -= 0.1;
       if (delaySeconds < 0.1) {
         clearInterval(this.interval);
         this.interval = null;
-        this.daleyContainerElem.classList.add('hide');
       }
       this.daleyElem.textContent = delaySeconds.toFixed(1);
     }, 100);
@@ -203,6 +208,7 @@ class AddCompany {
     if (!this.auto) {
       return;
     }
+    this.numberAutoAdded = 0;
     this.stopAuto = true;
     if (this.timer) {
       clearTimeout(this.timer);
@@ -254,6 +260,9 @@ class AddCompany {
         this.matchDeselect();
       }
       this.index += 1;
+      if (this.index > this.dataBase.length - 1) {
+        this.index -= 1;
+      }
       data = this.dataBase[this.index];
     }
     if (mode === 'prev') {
@@ -279,6 +288,9 @@ class AddCompany {
     this.isAdded = false;
     this.indexElem.textContent = this.index + 1;
     this.title = data.Компания;
+    this.phone = data.Телефоны;
+    this.inn = data.ИНН;
+    this.address = data.Адрес;
     this.email = this.parseEmail({ email: data.Почта });
     this.name = data.ФИО;
     this.city = data.Город;
@@ -327,7 +339,7 @@ class AddCompany {
           }
           this.addMatchCompany();
           if (this.fullMatchNameFilter.length !== 0) {
-            this.showMathesBitrix(fullMatch);
+            this.showMathesBitrix(this.fullMatchNameFilter);
           }
           if (ExcelMatch.length !== 0) {
             this.showMathesExcel(ExcelMatch);
@@ -391,7 +403,8 @@ class AddCompany {
       this.inputTitle.value = '';
     }
     if (comments !== '') {
-      this.inputComments.value = `${comments}<br><br>\n\n${this.template.value} ${city}<br>\n${industry}`;
+      // this.inputComments.value = `${comments}<br><br>\n\n${this.template.value} ${city}<br>\n${industry}`;
+      this.inputComments.value = `${comments}<br>\n${this.template.value}<br>\n${industry}<br>\n${this.templateFooter.value}`;
     } else {
       this.inputComments.value = '';
     }
@@ -437,6 +450,7 @@ class AddCompany {
         data,
       })
         .then((json) => {
+          console.log(json);
           setTimeout(() => {
             resolve(json);
           }, 1000);
@@ -531,12 +545,16 @@ class AddCompany {
         this.removeMatchElem();
       }
     }
-
+    console.log(this.address);
     const data = {
       fields: {
         TITLE: this.inputTitle.value,
         COMMENTS: this.inputComments.value,
         EMAIL: [],
+        PHONE: [{ VALUE: '555888', VALUE_TYPE: 'WORK' }],
+        "UF_CRM_1549133368": this.address,
+        "UF_CRM_1549132820": this.inn,
+        "UF_CRM_1549133401": this.phone,
       },
     };
 
@@ -554,7 +572,8 @@ class AddCompany {
       method: 'post',
       data,
     })
-      .then(() => {
+      .then((res) => {
+        console.log(res);
         this.sended += 1;
         this.sendedElem.textContent = this.sended;
         this.checkBitrixData.textContent = `Данные успешно добавлены битрикс24`;
@@ -564,6 +583,7 @@ class AddCompany {
         if (this.auto) {
           setTimeout(() => {
             this.isAdded = true;
+            this.numberAutoAdded += 1;
             pubSub.publish('isAdded');
           }, 1000);
         }
@@ -598,6 +618,7 @@ class AddCompany {
           resolve(json);
         })
         .catch((e) => {
+          console.log(e);
           reject(e);
         });
     });
@@ -733,7 +754,7 @@ class AddCompany {
   showMathesExcel(data) {
     this.showMatchesContainer.classList.remove('hidden');
     const match = data;
-    for (let i = 0; i < data.length; i += 1) {    this.fullMatchNameFilter
+    for (let i = 0; i < data.length; i += 1) {
       let isIdMatch = false;
       for(let j = 0; j < this.fullMatchNameFilter.length; j += 1) {
         if (this.fullMatchNameFilter[j].ID === data[i].id) {
