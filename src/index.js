@@ -432,9 +432,10 @@ class AddCompany {
   }
 
   getCompanyByTitle({ TITLE }) {
+    console.log(TITLE);
     const data = {
       order: { DATE_CREATE: 'ASC' },
-      filter: { TITLE },
+      filter: { "%100TITLE": TITLE },
       select: ['TITLE', 'EMAIL', 'COMMENTS'],
     };
 
