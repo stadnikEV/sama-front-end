@@ -581,7 +581,6 @@ class AddCompany {
         TITLE: this.inputTitle.value,
         COMMENTS: this.inputComments.value,
         EMAIL: [],
-        PHONE: [{ VALUE: '555888', VALUE_TYPE: 'WORK' }],
         "UF_CRM_1549133368": this.address,
         "UF_CRM_1549132820": this.inn,
         "UF_CRM_1549133401": this.phone,
