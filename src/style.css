@@ -89,6 +89,21 @@
   width: 300px;
 }
 
+.match-percent {
+  margin: 20px 0 0 40px;
+}
+
+.match-percent__company,
+.match-percent__fio {
+  width: 25px;
+}
+
+.match-percent__fio {
+  margin: 5px 0 0 32px;
+}
+
+
+
 
 .match-company-container.hide {
   display: none;

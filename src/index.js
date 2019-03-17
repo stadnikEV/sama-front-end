@@ -47,6 +47,9 @@ class AddCompany {
     this.daleyFromElem = document.querySelector('.input-daley-from');
     this.daleyFromTo = document.querySelector('.input-daley-to');
 
+    this.inputCompanyProcent = document.querySelector('.match-percent__company');
+    this.inputFioProcent = document.querySelector('.match-percent__fio');
+
     this.showMatchesContainer = document.querySelector('.show-matches-container');
     this.fullMatch = document.querySelector('.full-match');
 
@@ -456,13 +459,16 @@ class AddCompany {
         reject('Подключите webHook');
         return;
       }
+
       this.request({
         url: 'http://localhost:8080/companies',
         method: 'post',
         data: {
           companyName: TITLE,
           fio: this.name,
-        }
+          matchCompanyProcent: parseInt(this.inputCompanyProcent.value, 10),
+          matchFioProcent: parseInt(this.inputFioProcent.value, 10),
+        },
       })
         .then((json) => {
           resolve(json);
