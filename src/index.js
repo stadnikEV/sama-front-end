@@ -328,11 +328,6 @@ class AddCompany {
       })
       .then((dataFromBitrix) => {
         return new Promise((resolve, reject) => {
-          // const fullMatch = dataFromBitrix.result;
-          // const fullMatch = dataFromBitrix;
-          // this.fullMatchNameFilter = this.getFullMatchNameFilter(fullMatch);
-
-          // let ExcelMatch = this.searchMathesExcel();
           if (dataFromBitrix.length === 0) {
             this.statusData.company = true;
             this.checkBitrixData.textContent = 'компания ok';
@@ -340,25 +335,9 @@ class AddCompany {
             return;
           }
 
-          // if (this.fullMatchNameFilter.length === 0 && ExcelMatch.length === 0) {
-          //   this.statusData.company = true;
-          //   this.checkBitrixData.textContent = 'компания ok';
-          //   resolve();
-          //   return;
-          // }
           this.addMatchCompany();
-          // this.showMathesBitrix(this.fullMatchNameFilter);
           this.showMathesBitrix(dataFromBitrix);
 
-
-          // if (this.fullMatchNameFilter.length !== 0) {
-          //   this.showMathesBitrix(this.fullMatchNameFilter);
-          // }
-
-
-          // if (ExcelMatch.length !== 0) {
-          //   this.showMathesExcel(ExcelMatch);
-          // }
           reject('такая компания существует');
         });
       })
@@ -447,12 +426,6 @@ class AddCompany {
   }
 
   getCompanyByTitle({ TITLE }) {
-    // const data = {
-    //   order: { DATE_CREATE: 'ASC' },
-    //   filter: { "%TITLE": TITLE },
-    //   select: ['TITLE', 'EMAIL', 'COMMENTS'],
-    // };
-    // console.log(data);
     return new Promise((resolve, reject) => {
       if (this.webhookInput.value === '') {
         this.checkBitrixData.textContent = 'Подключите webHook';
@@ -480,12 +453,6 @@ class AddCompany {
   }
 
   getCompanyByEmail({ email }) {
-    // const data = {
-    //   order: { DATE_CREATE: 'ASC' },
-    //   filter: { EMAIL: email[0] },
-    //   select: ['TITLE', 'EMAIL', 'COMMENTS'],
-    // };
-
     return new Promise((resolve, reject) => {
       if (this.webhookInput.value === '') {
         this.checkBitrixData.textContent = 'Подключите webHook';
@@ -505,44 +472,6 @@ class AddCompany {
           reject(e);
         });
     });
-
-    // return new Promise((resolve, reject) => {
-    //   const loopIndex = email.length - 1;
-    //   let i = 0;
-    //   if (this.webhookInput.value === '') {
-    //     this.checkBitrixData.textContent = 'Подключите webHook';
-    //     reject('Подключите webHook');
-    //     return;
-    //   }
-    //
-    //   const asyncLoop = function async({ timing }) { // асинхронный цикл
-    //     setTimeout(() => {
-    //       this.request({
-    //         url: `${this.webhookInput.value}/crm.company.list`,
-    //         method: 'post',
-    //         data,
-    //       })
-    //         .then((json) => {
-    //           if (json.result.length === 0 && i < loopIndex) {
-    //             i += 1;
-    //             data.filter.EMAIL = email[i];
-    //             async.call(this, { timing: 1000 });
-    //             return;
-    //           }
-    //           setTimeout(() => {
-    //             resolve(json);
-    //           }, 1000);
-    //         })
-    //         .catch((e) => {
-    //           setTimeout(() => {
-    //             reject(e);
-    //           }, 1000);
-    //         });
-    //     }, timing);
-    //   };
-    //
-    //   asyncLoop.call(this, { timing: 0 });
-    // });
   }
 
   addCompany() {
