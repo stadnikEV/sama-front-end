@@ -178,7 +178,7 @@ class AddCompany {
     let dalayTo = this.daleyFromTo.value;
     if (dalayFrom === '' || dalayTo === '') {
       dalayFrom = 500;
-      dalayTo = 1000;
+      dalayTo = 600;
     } else {
       dalayFrom = parseInt(dalayFrom, 10) * 1000;
       dalayTo = parseInt(dalayTo, 10) * 1000;
@@ -355,7 +355,7 @@ class AddCompany {
         }
         setTimeout(() => {
           this.checkBitrixData.textContent = 'данные ok';
-        }, 1000);
+        }, 100);
       })
       .catch((e) => {
         this.isPanding = false;
@@ -374,17 +374,17 @@ class AddCompany {
           if (e === 'такой emai существует') {
             setTimeout(() => {
               pubSub.publish('notValidMail');
-            }, 1000);
+            }, 100);
           }
           if (e === 'такая компания существует') {
             setTimeout(() => {
               pubSub.publish('notValidCompany');
-            }, 1000);
+            }, 100);
           }
           if (e === 'Не корректные данные в Эксель') {
             setTimeout(() => {
               pubSub.publish('notValidData');
-            }, 1000);
+            }, 100);
           }
         }
       });
@@ -562,7 +562,7 @@ class AddCompany {
             this.isAdded = true;
             this.numberAutoAdded += 1;
             pubSub.publish('isAdded');
-          }, 1000);
+          }, 100);
         }
       })
       .catch((e) => {
