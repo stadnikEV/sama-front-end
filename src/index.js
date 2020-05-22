@@ -7,6 +7,7 @@ class AddCompany {
 
     this.dbReadyElem = document.querySelector('.db-ready');
     this.indexElem = document.querySelector('.index');
+    this.idElem = document.querySelector('.id-elem');
     const nextCompanyButton = document.querySelector('.next-company');
     nextCompanyButton.addEventListener('click', this.goToCompany.bind(this, { mode: 'next' }));
     const prevCompanyButton = document.querySelector('.prev-company');
@@ -31,7 +32,11 @@ class AddCompany {
     this.sendedElem = document.querySelector('.sended');
 
     this.inputTitle = document.querySelector('.company');
+    this.inputInn = document.querySelector('.inn');
     this.inputEmail = document.querySelector('.email');
+    this.inputService = document.querySelector('.service');
+    this.inputPhone = document.querySelector('.phone');
+    this.inputAddress = document.querySelector('.address');
     this.inputComments = document.querySelector('.comments');
 
     this.matchCompanyContainer = document.querySelector('.match-company-container');
@@ -66,6 +71,7 @@ class AddCompany {
     this.statusData = {
       email: false,
       company: false,
+      inn: false,
     };
     this.match = {};
 
@@ -79,6 +85,7 @@ class AddCompany {
     });
     pubSub.subscribe('isAdded', this.nextCompany.bind(this));
     pubSub.subscribe('notValidCompany', this.nextCompany.bind(this));
+    pubSub.subscribe('notValidInn', this.nextCompany.bind(this));
 
 
     this.getDataBase()
@@ -286,10 +293,12 @@ class AddCompany {
     this.statusData = {
       email: false,
       company: false,
+      inn: false,
     };
     this.showMatchesContainer.classList.add('hidden');
     this.isAdded = false;
     this.indexElem.textContent = this.index + 1;
+    this.idElem.textContent = this.index + 2;
     this.title = data.Компания;
     this.phone = data.Телефоны;
     this.inn = data.ИНН;
@@ -302,7 +311,11 @@ class AddCompany {
     this.addToForm({
       title: this.title,
       email: this.email,
+      inn: this.inn,
+      service: this.industry,
+      phone: this.phone,
       comments: this.name,
+      address: this.address,
       city: this.city,
       industry: this.industry,
     });
@@ -321,6 +334,20 @@ class AddCompany {
             return;
           }
           reject('такой emai существует');
+        });
+      })
+      .then(() => {
+        return this.getCompanyByInn({ inn: this.inn });
+      })
+      .then((dataFromBitrix) => {
+        return new Promise((resolve, reject) => {
+          if (dataFromBitrix.length === 0) {
+            this.statusData.inn = true;
+            this.checkBitrixData.textContent = 'inn ok';
+            resolve();
+            return;
+          }
+          reject('такой inn существует');
         });
       })
       .then(() => {
@@ -374,34 +401,65 @@ class AddCompany {
           if (e === 'такой emai существует') {
             setTimeout(() => {
               pubSub.publish('notValidMail');
-            }, 100);
+            }, 10);
           }
           if (e === 'такая компания существует') {
             setTimeout(() => {
               pubSub.publish('notValidCompany');
-            }, 100);
+            }, 10);
+          }
+          if (e === 'такой inn существует') {
+            setTimeout(() => {
+              pubSub.publish('notValidInn');
+            }, 10);
           }
           if (e === 'Не корректные данные в Эксель') {
             setTimeout(() => {
               pubSub.publish('notValidData');
-            }, 100);
+            }, 10);
           }
         }
       });
   }
 
-  addToForm({ title, email, comments, city, industry }) {
+  addToForm({ title, email, inn, service, phone, address, comments, city, industry }) {
     if (title !== '') {
       this.inputTitle.value = title;
     } else {
       this.inputTitle.value = '';
     }
+
     if (comments !== '') {
       // this.inputComments.value = `${comments}<br><br>\n\n${this.template.value} ${city}<br>\n${industry}`;
       this.inputComments.value = `${comments}<br>\n${this.template.value}<br>\n${industry}<br>\n${this.templateFooter.value}`;
     } else {
       this.inputComments.value = '';
     }
+
+    if (inn !== null) {
+      this.inputInn.value = inn;
+    } else {
+      this.inputInn.textContent = '';
+    }
+
+    if (service !== '') {
+      this.inputService.value = service;
+    } else {
+      this.inputService.value = '';
+    }
+
+    if (phone !== '') {
+      this.inputPhone.value = phone;
+    } else {
+      this.inputPhone.value = '';
+    }
+
+    if (address !== '') {
+      this.inputAddress.value = address;
+    } else {
+      this.inputAddress.value = '';
+    }
+
     if (email !== null) {
       this.inputEmail.textContent = email[0];
       for (let i = 1; i < email.length; i += 1) {
@@ -474,6 +532,28 @@ class AddCompany {
     });
   }
 
+  getCompanyByInn({ inn }) {
+    return new Promise((resolve, reject) => {
+      if (this.webhookInput.value === '') {
+        this.checkBitrixData.textContent = 'Подключите webHook';
+        reject('Подключите webHook');
+        return;
+      }
+
+      this.request({
+        url: 'http://localhost:8080/inn',
+        method: 'post',
+        data: { inn },
+      })
+        .then((json) => {
+          resolve(json);
+        })
+        .catch((e) => {
+          reject(e);
+        });
+    });
+  }
+
   addCompany() {
     if (this.isPanding) {
       return;
@@ -483,7 +563,7 @@ class AddCompany {
       return;
     }
 
-    if (!this.statusData.email || !this.statusData.company || this.template.value === '') {
+    if (!this.statusData.email || !this.statusData.inn || !this.statusData.company || this.template.value === '') {
       if (this.auto) {
         this.stopAuto = false;
         this.auto = false;
@@ -499,6 +579,9 @@ class AddCompany {
       if (!this.statusData.email) {
         message = 'недопустимый email';
       }
+      if (!this.statusData.inn) {
+        message = 'недопустимый inn';
+      }
       this.checkBitrixData.textContent = `Ошибка:  данные не отправлены (${message})`;
 
       const conf = confirm(`${message}. Отправить?`);
@@ -510,7 +593,7 @@ class AddCompany {
         this.removeMatchElem();
       }
     }
-    console.log(this.address);
+
     const data = {
       fields: {
         TITLE: this.inputTitle.value,
@@ -538,7 +621,6 @@ class AddCompany {
       data,
     })
       .then((res) => {
-        console.log('добавлено');
         return this.request({
           url: 'http://localhost:8080/add-company',
           method: 'post',
@@ -546,6 +628,7 @@ class AddCompany {
             companyName: this.inputTitle.value,
             fio: this.name,
             email: this.email,
+            inn: this.inn,
           },
         });
       })
@@ -555,6 +638,7 @@ class AddCompany {
         this.sendedElem.textContent = this.sended;
         this.checkBitrixData.textContent = `Данные успешно добавлены битрикс24`;
         this.statusData.email = false;
+        this.statusData.inn = false;
         this.statusData.company = false;
 
         if (this.auto) {
@@ -566,7 +650,7 @@ class AddCompany {
         }
       })
       .catch((e) => {
-        this.checkBitrixData.textContent = `Данные не добавлены битрикс24(Зови Женечку)`;
+        this.checkBitrixData.textContent = `Данные не добавлены битрикс24(Возможно отсутствует интернет соединение или проблема с сервером битрикс битрикс)`;
         reject(e);
       });
   }
@@ -586,7 +670,7 @@ class AddCompany {
       })
         .then((response) => {
           if (response.status !== 200) {
-            return Promise.reject('Ошибка ответа сервера, позови Жеку, он разрулит...');
+            return Promise.reject('Ошибка ответа сервера(возможно отсутствует интернет или завас локальный сервер)');
           }
           const json = response.json();
           return json;

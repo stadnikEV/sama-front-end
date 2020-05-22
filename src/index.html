@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Document</title>
+  <title>Add to Bitrix</title>
   <script src="pubsub.js" defer></script>
   <script src="index.js" defer></script>
   <link rel="stylesheet" href="style.css">
@@ -15,7 +15,8 @@
     <input type="text" name="" value="" class="webhook-input">
     <span class="webhook-describe">webHook </span>
   </div>
-  <span class="index"></span>
+  <span>Позиция: </span><span class="index"></span>
+  <span>ID: </span><span class="id-elem"></span>
   <button class="add-company">Добавить компанию</button>
   <button class="prev-company">Предыдущая компания</button>
   <button class="next-company">Следующая компания</button>
@@ -31,9 +32,9 @@
 
   <div class="form-auto-container">
     <form action="#" class="form-auto">
-      <span>Автоматический режим</span>
-      <input type="text" class="input-auto-from">
-      <input type="text" class="input-auto-to">
+      <span>Автоматический режим</span></br>
+      <span>Начальная позизия: </span><input type="text" class="input-auto-from"></br>
+      <span>Нужно добавить(шт): </span><input type="text" class="input-auto-to"></br>
       <button class="button-start">start</button>
       <button class="button-stop">stop</button>
       <span class="daley-text">Интервал(сек)</span>
@@ -60,7 +61,11 @@
     <p class="daley-container hide"><span class="daley-describe">Задержка: </span><span class="daley">15c</span></p>
     <p><span>Добавлено в базу: </span><span class="sended">0</span></p>
     <textarea class="company"></textarea>
+    <textarea class="inn" disabled></textarea>
     <textarea class="email" disabled></textarea>
+    <textarea class="service" disabled></textarea>
+    <textarea class="address" disabled></textarea>
+    <textarea class="phone" disabled></textarea>
     <textarea class="comments"></textarea>
   </div>
   <input type="text" class="template">
